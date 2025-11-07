@@ -30,3 +30,8 @@ tensorflow==2.15.0
 retina-face==0.0.17
 librosa
 mmgp
+
+# API dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6

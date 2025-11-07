@@ -93,14 +93,9 @@ class Config:
         # Test data paths
         self.base_dir = "datasets/echomimicv3_demos/"
         self.test_name_list = [
-            'guitar_woman_01','guitar_man_01','music_woman_01.png',
-            'demo_cartoon_03','demo_cartoon_04',
-            '2025-07-14-1036','2025-07-14-1942',
-            '2025-07-14-2371','2025-07-14-3927',
-            '2025-07-14-4513','2025-07-14-6032',
-            '2025-07-14-7113','2025-07-14-7335',
-            'demo_ch_man_01','demo_ch_woman_04',
-            ]
+            'demo',  # This will look for demo.png/jpg and demo.WAV
+        ]
+        
         self.wav2vec_model_dir = "models/wav2vec2-base-960h"
         self.save_path = "outputs"
 
