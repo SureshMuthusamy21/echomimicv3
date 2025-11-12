@@ -23,11 +23,6 @@ class APIConfig:
         self.temp_dir = os.getenv("TEMP_DIR", "temp")
         os.makedirs(self.temp_dir, exist_ok=True)
         
-        # Memory optimization settings
-        self.use_cpu_offload = os.getenv("USE_CPU_OFFLOAD", "true").lower() == "true"
-        self.low_vram_mode = os.getenv("LOW_VRAM_MODE", "true").lower() == "true"
-        self.enable_memory_efficient_attention = os.getenv("ENABLE_MEMORY_EFFICIENT_ATTENTION", "true").lower() == "true"
-        
         # Inference settings
         self.sample_size = [768, 768]
         self.partial_video_length = 113
