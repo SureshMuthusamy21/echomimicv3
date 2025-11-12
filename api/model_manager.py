@@ -196,8 +196,12 @@ class ModelManager:
             
             # Enable gradient checkpointing to save memory
             if hasattr(transformer, 'enable_gradient_checkpointing'):
-                transformer.enable_gradient_checkpointing()
-                logger.info("   ✓ Gradient checkpointing enabled")
+                try:
+                    transformer.enable_gradient_checkpointing()
+                    logger.info("   ✓ Gradient checkpointing enabled")
+                except TypeError:
+                    # Some models have different gradient checkpointing signatures
+                    logger.info("   ⚠️  Gradient checkpointing not supported for this transformer")
             
             # Keep transformer on CPU if using offload mode
             if not self.use_cpu_offload:
@@ -256,8 +260,11 @@ class ModelManager:
             
             # Enable gradient checkpointing
             if hasattr(text_encoder, 'enable_gradient_checkpointing'):
-                text_encoder.enable_gradient_checkpointing()
-                logger.info("   ✓ Text encoder gradient checkpointing enabled")
+                try:
+                    text_encoder.enable_gradient_checkpointing()
+                    logger.info("   ✓ Text encoder gradient checkpointing enabled")
+                except TypeError:
+                    logger.info("   ⚠️  Gradient checkpointing not supported for text encoder")
             
             # Move to device in eval mode
             logger.info("   Moving text encoder to device...")
