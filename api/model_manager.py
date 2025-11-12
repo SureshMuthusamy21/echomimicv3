@@ -134,6 +134,12 @@ class ModelManager:
             self.device = torch.device("cuda" if self.gpu_available else "cpu")
             weight_dtype = torch.bfloat16 if self.gpu_available else torch.float32
             
+            # Free up memory before loading
+            if self.gpu_available:
+                torch.cuda.empty_cache()
+                # Set memory allocation to be more conservative
+                torch.cuda.set_per_process_memory_fraction(0.9, 0)
+            
             logger.info(f"🔧 Using device: {self.device}")
             logger.info(f"🔧 Using dtype: {weight_dtype}")
             
@@ -152,13 +158,19 @@ class ModelManager:
             # Load transformer checkpoint
             transformer_path = "models/transformer/diffusion_pytorch_model.safetensors"
             if os.path.exists(transformer_path):
+                logger.info("   Loading transformer checkpoint...")
                 from safetensors.torch import load_file
                 state_dict = load_file(transformer_path)
                 state_dict = state_dict["state_dict"] if "state_dict" in state_dict else state_dict
                 missing, unexpected = transformer.load_state_dict(state_dict, strict=False)
-                logger.info(f"Transformer loaded - Missing: {len(missing)}, Unexpected: {len(unexpected)}")
+                logger.info(f"   Transformer loaded - Missing: {len(missing)}, Unexpected: {len(unexpected)}")
             
+            logger.info("   Transformer ready!")
             self.loaded_models.append("transformer")
+            
+            # Free up memory after transformer
+            if self.gpu_available:
+                torch.cuda.empty_cache()
             
             # Load VAE
             logger.info("📦 Loading VAE...")
@@ -184,16 +196,30 @@ class ModelManager:
                            cfg['text_encoder_kwargs'].get('text_encoder_subpath', 'text_encoder')),
                 additional_kwargs=OmegaConf.to_container(cfg['text_encoder_kwargs']),
                 torch_dtype=weight_dtype,
-            ).eval()
+            )
+            logger.info("   Moving text encoder to device...")
+            text_encoder = text_encoder.to(device=self.device).eval()
+            logger.info("   Text encoder loaded successfully!")
             self.loaded_models.append("text_encoder")
+            
+            # Free up memory after text encoder
+            if self.gpu_available:
+                torch.cuda.empty_cache()
             
             # Load Image Encoder
             logger.info("📦 Loading image encoder...")
             clip_image_encoder = CLIPModel.from_pretrained(
                 os.path.join("models/Wan2.1-Fun-V1.1-1.3B-InP", 
                            cfg['image_encoder_kwargs'].get('image_encoder_subpath', 'image_encoder')),
-            ).to(weight_dtype).eval()
+            )
+            logger.info("   Moving image encoder to device...")
+            clip_image_encoder = clip_image_encoder.to(device=self.device, dtype=weight_dtype).eval()
+            logger.info("   Image encoder loaded successfully!")
             self.loaded_models.append("clip_image_encoder")
+            
+            # Free up memory after image encoder
+            if self.gpu_available:
+                torch.cuda.empty_cache()
             
             # Load Scheduler
             logger.info("📦 Loading scheduler...")
@@ -218,8 +244,11 @@ class ModelManager:
             # Load Wav2Vec2
             logger.info("📦 Loading Wav2Vec2...")
             wav2vec_processor = Wav2Vec2Processor.from_pretrained("models/wav2vec2-base-960h")
-            wav2vec_model = Wav2Vec2Model.from_pretrained("models/wav2vec2-base-960h").eval()
+            logger.info("   Loading Wav2Vec2 model...")
+            wav2vec_model = Wav2Vec2Model.from_pretrained("models/wav2vec2-base-960h")
+            wav2vec_model = wav2vec_model.to(device=self.device).eval()
             wav2vec_model.requires_grad_(False)
+            logger.info("   Wav2Vec2 loaded successfully!")
             self.loaded_models.append("wav2vec2")
             
             # Store all models
